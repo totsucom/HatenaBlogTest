@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29613.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "TweliteZone", "TweliteZone\TweliteZone.vbproj", "{C2545D60-5CA4-4232-8203-3E126F496071}"
+EndProject
+Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "TestHatenaBlog", "TestHatenaBlog\TestHatenaBlog.vbproj", "{F6986847-00C3-4285-86AA-E57592054BFF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C2545D60-5CA4-4232-8203-3E126F496071}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2545D60-5CA4-4232-8203-3E126F496071}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2545D60-5CA4-4232-8203-3E126F496071}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2545D60-5CA4-4232-8203-3E126F496071}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F6986847-00C3-4285-86AA-E57592054BFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F6986847-00C3-4285-86AA-E57592054BFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F6986847-00C3-4285-86AA-E57592054BFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F6986847-00C3-4285-86AA-E57592054BFF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AB5024C3-DC5C-4254-8097-B4AA7DA05FC8}
+	EndGlobalSection
+EndGlobal
