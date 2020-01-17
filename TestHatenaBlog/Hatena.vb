@@ -677,7 +677,6 @@ Public Class Hatena
     'このクラスでは一時的なデータしか保持しないので、ユーザー側で保持すること
     Public Class PhotoLifeDirectory
         Public Shared Event ThumbnailsDownloaded(dir As PhotoLifeDirectory, errorMessage As String)
-        Public Shared Event ImageDownloaded(photo As Photo, errorMessage As String)
 
         'サムネイル画像
         Public Class Photo
@@ -778,6 +777,8 @@ Public Class Hatena
         'Private _dl As HttpDownloader = Nothing
         Private _hatenaId As String = ""
         Private _directory As String = ""
+        Private _currentPage As Integer
+        Private _nextPageUrl As String
 
         '取得したサムネイルの一覧を返す
         'Nothingの場合もある
@@ -787,12 +788,29 @@ Public Class Hatena
             End Get
         End Property
 
+        '現在のページ番号を返す。1~
+        Public ReadOnly Property CurrentPage As Integer
+            Get
+                Return _currentPage
+            End Get
+        End Property
+
+        '次ページのURLを返す。無い場合は空文字を返す
+        Public ReadOnly Property NextPageUrl As String
+            Get
+                Return _nextPageUrl
+            End Get
+        End Property
+
         'フォトライフのディレクトリページ("Hatena Blog" など)からサムネイル画像を読み出す
         'ダウンローダーははてなにログインしていおくこと
+        '結果は ThumbnailsDownloaded イベントで返す
         Public Sub New(hatenaId As String, directory As String)
             '_dl = dl
             _hatenaId = hatenaId
             _directory = directory
+            _currentPage = 0
+            _nextPageUrl = ""
 
             'ダウンロードハンドラを追加
             AddHandler Form1.dl.Downloaded, AddressOf dl_Downloaded
@@ -814,7 +832,20 @@ Public Class Hatena
             MyBase.Finalize()
         End Sub
 
+        '次のページをダウンロードする。無い場合はFalseを返す
+        'ダウンロードしていないとき、つまり ThumbnailsDownloadedイベントを受け取った後に実行すること
+        '結果は ThumbnailsDownloaded イベントで返す
+        Public Function DownloadNextPage() As Boolean
+            If _nextPageUrl = "" Then Return False
 
+            '次ページをダウンロード開始
+            Form1.dl.DownloadParserAsync(_nextPageUrl & "&sort=new", New pldDummy(Me, -1))
+
+            _nextPageUrl = ""
+            Return True
+        End Function
+
+        'サムネイルのページまたはサムネイル画像のダウンロード処理が完了した
         Private Sub dl_Downloaded(sender As HttpDownloader, uri As String, output As Object,
                                   res As HttpResponseMessage, tag As Object)
 
@@ -826,12 +857,14 @@ Public Class Hatena
 
             If downloadingIndex = -1 Then
                 'サムネイル一覧のページをダウンロードした
+                _currentPage += 1
 
                 If res IsNot Nothing Then
                     If res.StatusCode = Net.HttpStatusCode.OK Then
                         'フォトライフのページが開けたので
                         'サムネイルのURL一覧を取得する
-                        _photos = getPhotoListFromHtml(_hatenaId, DirectCast(output, AngleSharp.Html.Dom.IHtmlDocument))
+                        Dim dom As AngleSharp.Html.Dom.IHtmlDocument = DirectCast(output, AngleSharp.Html.Dom.IHtmlDocument)
+                        _photos = getPhotoListFromHtml(_hatenaId, dom)
 
                         If _photos.Count = 0 Then
                             'サムネイルが見つからない
@@ -841,11 +874,23 @@ Public Class Hatena
                             processCount = 0        'ダウンロード中のアイテム数
                             Do
                                 If nextDownloadIndex > UBound(_photos) OrElse processCount = 3 Then Exit Do
-                                Form1.dl.DownloadMemoryStreamAsync(_photos(nextDownloadIndex).thumbnailUrl,
+                                Form1.dl.DownloadImageAsync(_photos(nextDownloadIndex).thumbnailUrl,
                                                               New pldDummy(Me, nextDownloadIndex))
                                 nextDownloadIndex += 1
                                 processCount += 1
                             Loop
+                        End If
+
+                        '次ページの有無のチェック
+                        Dim pagerLinks = dom.QuerySelectorAll("div.pager a")
+                        If pagerLinks IsNot Nothing Then
+                            Dim nextPage As String = (_currentPage + 1).ToString
+                            For Each a In pagerLinks
+                                If a.TextContent = nextPage Then
+                                    _nextPageUrl = "https://f.hatena.ne.jp" & a.GetAttribute("href")
+                                    Exit For
+                                End If
+                            Next
                         End If
                     Else
                         'HTTPエラー
@@ -860,15 +905,8 @@ Public Class Hatena
 
                 If res IsNot Nothing Then
                     If res.StatusCode = Net.HttpStatusCode.OK Then
-                        'サムネイルをダウンロードできた
-                        Dim memoryStream As IO.MemoryStream = DirectCast(output, IO.MemoryStream)
-                        Try
-                            _photos(downloadingIndex).thumbnail = Image.FromStream(memoryStream)
-                        Catch ex As Exception
-                            'イメージへの変換失敗
-                            Debug.Print("イメージへの変換失敗" & vbNewLine & ex.Message)
-                            _photos(downloadingIndex).thumbnail = Nothing
-                        End Try
+                        'サムネイルをダウンロードできた?(Nothingの場合もある)
+                        _photos(downloadingIndex).thumbnail = DirectCast(output, Image)
                     Else
                         'HTTPエラー
                         Debug.Print("HTTPエラー" & res.StatusCode.ToString)
@@ -883,7 +921,7 @@ Public Class Hatena
 
                 If nextDownloadIndex <= UBound(_photos) Then
                     '次をダウンロード
-                    Form1.dl.DownloadMemoryStreamAsync(_photos(nextDownloadIndex).thumbnailUrl,
+                    Form1.dl.DownloadImageAsync(_photos(nextDownloadIndex).thumbnailUrl,
                                                   New pldDummy(Me, nextDownloadIndex))
                     nextDownloadIndex += 1
                     processCount += 1

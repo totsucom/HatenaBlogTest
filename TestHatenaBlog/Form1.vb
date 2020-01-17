@@ -153,14 +153,14 @@
     End Sub
 
     'はてなフォトライフのサムネイル一覧を取得した
-    Private Sub photolife_ThumbnailsDownloaded(Dir As Hatena.PhotoLifeDirectory, errorMessage As String)
+    Private Sub photolife_ThumbnailsDownloaded(dir As Hatena.PhotoLifeDirectory, errorMessage As String)
         If errorMessage.Length > 0 Then Debug.Print(errorMessage)
-        If Dir.Photos IsNot Nothing AndAlso Dir.Photos.Count > 0 Then
+        If dir.Photos IsNot Nothing AndAlso dir.Photos.Count > 0 Then
 
             'リストビューに表示
             With ListViewPhotos
                 .BeginUpdate()
-                For Each p In Dir.Photos
+                For Each p In dir.Photos
                     If p.thumbnail IsNot Nothing Then
                         .LargeImageList.Images.Add(p.entry, ResizeImage(p.thumbnail, New Drawing.Size(IMAGE_SIZE, IMAGE_SIZE)))
                     End If
@@ -169,6 +169,12 @@
                 .EndUpdate()
             End With
         End If
+
+        '全ての画像を読み込む場合は、下記をコメントアウトする
+        'If dir.NextPageUrl <> "" Then
+        '    '次ページを取得する
+        '    dir.DownloadNextPage()
+        'End If
     End Sub
 
     Private Function createListViewItem(photo As Hatena.PhotoLifeDirectory.Photo) As ListViewItem
@@ -207,14 +213,14 @@
 
         Dim p As Hatena.PhotoLifeDirectory.Photo = ListViewPhotos.SelectedItems(0).Tag
 
-        LabelPhotoEntry.Text = p.entry
-
         Dim img = Await p.GetImage()
         If img IsNot Nothing Then
+            LabelPhotoEntry.Text = p.entry & p.TypeChar
             PictureBoxPhoto.Image = img
             StatusLabel1.Text = p.ImageUrl
             TabControl1.SelectedTab = TabPagePhoto 'タブを選択
         Else
+            LabelPhotoEntry.Text = p.entry
             PictureBoxPhoto.Image = Nothing
             StatusLabel1.Text = "ダウンロードできませんでした"
         End If
